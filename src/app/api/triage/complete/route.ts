@@ -79,11 +79,13 @@ export async function POST(req: Request) {
       patientName,
       patientEmail,
       mainSymptom: data.main_symptom,
-      symptomDuration: data.evolution_time,
+      evolutionTime: data.evolution_time,
       painIntensity: data.pain_intensity,
       relevantHistory: data.relevant_history,
       urgency: data.urgency_classification,
       suggestedSpecialty: data.suggested_specialty,
+      classificationJustification: data.classification_justification,
+      aiSummary: data.ai_summary,
     })
     .returning();
 

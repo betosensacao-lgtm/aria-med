@@ -51,17 +51,11 @@ export const genderEnum = pgEnum("gender", [
   "prefer_not_to_say",
 ]);
 
-export const triageUrgencyEnum = pgEnum("triage_urgency", [
-  "RED",
-  "YELLOW",
-  "GREEN",
-]);
+// Maps to existing DB enum "urgency_classification" (created by ARIA-Med)
+export const triageUrgencyEnum = pgEnum("urgency_classification", ["RED", "YELLOW", "GREEN"]);
 
-export const triageStatusEnum = pgEnum("triage_status", [
-  "PENDING",
-  "REVIEWED",
-  "ARCHIVED",
-]);
+// Maps to existing DB enum "triage_status"
+export const triageStatusEnum = pgEnum("triage_status", ["PENDING", "REVIEWED", "ARCHIVED"]);
 
 // ─── Tables ──────────────────────────────────────────────────────────────────
 
@@ -130,11 +124,18 @@ export const triageSessions = pgTable("triage_sessions", {
   patientName: text("patient_name").notNull(),
   patientEmail: text("patient_email").notNull(),
   mainSymptom: text("main_symptom"),
-  symptomDuration: text("symptom_duration"),
-  painIntensity: integer("pain_intensity"), // 1-10
+  // DB column is "evolution_time" (from ARIA-Med); kept for backward compat
+  evolutionTime: text("evolution_time"),
+  painIntensity: integer("pain_intensity"),
   relevantHistory: text("relevant_history"),
-  urgency: triageUrgencyEnum("urgency"),
+  // DB column/enum is "urgency_classification" (from ARIA-Med)
+  urgency: triageUrgencyEnum("urgency_classification"),
   suggestedSpecialty: clinicSpecialtyEnum("suggested_specialty"),
+  // Extra ARIA-Med columns — kept for data continuity
+  classificationJustification: text("classification_justification"),
+  aiSummary: text("ai_summary"),
+  messageCount: integer("message_count").default(0),
+  modelUsed: text("model_used"),
   status: triageStatusEnum("status").notNull().default("PENDING"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
