@@ -51,6 +51,18 @@ export const genderEnum = pgEnum("gender", [
   "prefer_not_to_say",
 ]);
 
+export const triageUrgencyEnum = pgEnum("triage_urgency", [
+  "RED",
+  "YELLOW",
+  "GREEN",
+]);
+
+export const triageStatusEnum = pgEnum("triage_status", [
+  "PENDING",
+  "REVIEWED",
+  "ARCHIVED",
+]);
+
 // ─── Tables ──────────────────────────────────────────────────────────────────
 
 export const users = pgTable("users", {
@@ -113,11 +125,35 @@ export const professionals = pgTable("professionals", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+export const triageSessions = pgTable("triage_sessions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  patientName: text("patient_name").notNull(),
+  patientEmail: text("patient_email").notNull(),
+  mainSymptom: text("main_symptom"),
+  symptomDuration: text("symptom_duration"),
+  painIntensity: integer("pain_intensity"), // 1-10
+  relevantHistory: text("relevant_history"),
+  urgency: triageUrgencyEnum("urgency"),
+  suggestedSpecialty: clinicSpecialtyEnum("suggested_specialty"),
+  status: triageStatusEnum("status").notNull().default("PENDING"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const triageMessages = pgTable("triage_messages", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  sessionId: uuid("session_id").notNull().references(() => triageSessions.id, { onDelete: "cascade" }),
+  role: text("role", { enum: ["user", "assistant"] }).notNull(),
+  content: text("content").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 export const appointments = pgTable("appointments", {
   id: uuid("id").primaryKey().defaultRandom(),
   patientId: uuid("patient_id").notNull().references(() => users.id),
   clinicId: uuid("clinic_id").notNull().references(() => clinics.id),
   professionalId: uuid("professional_id").notNull().references(() => professionals.id),
+  triageSessionId: uuid("triage_session_id").references(() => triageSessions.id),
   date: date("date").notNull(),
   startTime: time("start_time").notNull(),
   endTime: time("end_time").notNull(),
@@ -184,11 +220,21 @@ export const professionalsRelations = relations(professionals, ({ one, many }) =
   appointments: many(appointments),
 }));
 
+export const triageSessionsRelations = relations(triageSessions, ({ many }) => ({
+  messages: many(triageMessages),
+  appointments: many(appointments),
+}));
+
+export const triageMessagesRelations = relations(triageMessages, ({ one }) => ({
+  session: one(triageSessions, { fields: [triageMessages.sessionId], references: [triageSessions.id] }),
+}));
+
 export const appointmentsRelations = relations(appointments, ({ one }) => ({
   patient: one(users, { fields: [appointments.patientId], references: [users.id] }),
   clinic: one(clinics, { fields: [appointments.clinicId], references: [clinics.id] }),
   professional: one(professionals, { fields: [appointments.professionalId], references: [professionals.id] }),
   preAnamnesis: one(preAnamnesis, { fields: [appointments.id], references: [preAnamnesis.appointmentId] }),
+  triageSession: one(triageSessions, { fields: [appointments.triageSessionId], references: [triageSessions.id] }),
 }));
 
 export const preAnamnesisRelations = relations(preAnamnesis, ({ one }) => ({

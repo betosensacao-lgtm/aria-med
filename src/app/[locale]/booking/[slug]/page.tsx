@@ -28,7 +28,7 @@ export default async function ClinicBookingPage({
             <div className="w-8 h-8 rounded-lg bg-[#0A9396] flex items-center justify-center">
               <Calendar className="w-4 h-4 text-white" />
             </div>
-            <span className="font-syne font-extrabold text-[#003049] tracking-tight">ScheduleClinic</span>
+            <span className="font-syne font-extrabold text-[#003049] tracking-tight">MedBook</span>
           </Link>
         </div>
       </header>

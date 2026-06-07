@@ -25,8 +25,9 @@ type BookResult =
 export async function createAppointment(input: {
   clinicId: string;
   professionalId: string;
-  date: string;     // "yyyy-MM-dd"
+  date: string;      // "yyyy-MM-dd"
   startTime: string; // "HH:MM"
+  triageSessionId?: string;
 }): Promise<BookResult> {
   const user = await getCurrentUser();
   if (!user) {
@@ -74,6 +75,7 @@ export async function createAppointment(input: {
       startTime: input.startTime,
       endTime,
       status: "pending",
+      ...(input.triageSessionId ? { triageSessionId: input.triageSessionId } : {}),
     })
     .returning({ id: appointments.id });
 

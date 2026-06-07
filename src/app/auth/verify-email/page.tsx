@@ -45,7 +45,7 @@ export default function VerifyEmailPage() {
 
         <Link href="/" className="flex items-center justify-center gap-2 text-sm text-[#56768A] hover:text-[#003049] transition-colors">
           <Calendar className="w-4 h-4" />
-          <span className="font-syne font-bold">ScheduleClinic</span>
+          <span className="font-syne font-bold">MedBook</span>
         </Link>
       </div>
     </div>

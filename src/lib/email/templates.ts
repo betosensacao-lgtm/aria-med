@@ -28,7 +28,7 @@ function layout(opts: { heading: string; accent?: string; body: string }): strin
         <tr><td style="background:linear-gradient(135deg,#003049 0%,#055870 100%);padding:28px 32px;">
           <table role="presentation" cellpadding="0" cellspacing="0"><tr>
             <td style="background-color:${accent};width:36px;height:36px;border-radius:9px;text-align:center;vertical-align:middle;font-size:18px;">📅</td>
-            <td style="padding-left:12px;color:#ffffff;font-size:18px;font-weight:800;letter-spacing:-0.3px;">ScheduleClinic</td>
+            <td style="padding-left:12px;color:#ffffff;font-size:18px;font-weight:800;letter-spacing:-0.3px;">MedBook</td>
           </tr></table>
         </td></tr>
         <!-- Accent bar -->
@@ -44,11 +44,11 @@ function layout(opts: { heading: string; accent?: string; body: string }): strin
         <!-- Footer -->
         <tr><td style="padding:24px 32px;background-color:#F4FAFA;border-top:1px solid #CCE8E8;">
           <p style="margin:0;color:#8FA8B5;font-size:12px;line-height:1.5;">
-            This is an automated message from ScheduleClinic. Please do not reply directly to this email.
+            This is an automated message from MedBook. Please do not reply directly to this email.
           </p>
         </td></tr>
       </table>
-      <p style="color:#8FA8B5;font-size:12px;margin-top:16px;">© 2026 ScheduleClinic</p>
+      <p style="color:#8FA8B5;font-size:12px;margin-top:16px;">© 2026 MedBook</p>
     </td></tr>
   </table>
 </body>

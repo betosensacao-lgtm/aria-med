@@ -36,7 +36,7 @@ export function Navbar() {
           <Calendar className="w-4 h-4 text-white" />
         </div>
         <span className="font-syne font-800 text-[1.2rem] tracking-tight text-[#003049] font-extrabold">
-          ScheduleClinic
+          MedBook
         </span>
       </Link>
 

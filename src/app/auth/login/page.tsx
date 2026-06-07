@@ -51,7 +51,7 @@ function LoginForm() {
           <div className="w-9 h-9 rounded-xl bg-[#0A9396] flex items-center justify-center">
             <Calendar className="w-5 h-5 text-white" />
           </div>
-          <span className="font-syne font-extrabold text-white text-xl tracking-tight">ScheduleClinic</span>
+          <span className="font-syne font-extrabold text-white text-xl tracking-tight">MedBook</span>
         </Link>
 
         <div className="relative z-10 space-y-6">
@@ -76,7 +76,7 @@ function LoginForm() {
           </div>
         </div>
 
-        <p className="text-white/25 text-sm relative z-10">© 2025 ScheduleClinic</p>
+        <p className="text-white/25 text-sm relative z-10">© 2025 MedBook</p>
       </div>
 
       {/* Right panel */}

@@ -31,6 +31,12 @@ export function BookingWidget({
   const router = useRouter();
   const [proId, setProId] = useState(professionals[0]?.id ?? "");
   const [date, setDate] = useState(format(new Date(), "yyyy-MM-dd"));
+  const [triageSessionId, setTriageSessionId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const id = sessionStorage.getItem("triageSessionId");
+    if (id) setTriageSessionId(id);
+  }, []);
   const [slots, setSlots] = useState<Slot[]>([]);
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
   const [loadingSlots, setLoadingSlots] = useState(false);
@@ -59,7 +65,9 @@ export function BookingWidget({
         professionalId: proId,
         date,
         startTime: selectedSlot,
+        ...(triageSessionId ? { triageSessionId } : {}),
       });
+      if (result.ok) sessionStorage.removeItem("triageSessionId");
 
       if (result.ok) {
         router.push(`/booking/${clinicSlug}/confirmed?appt=${result.appointmentId}`);

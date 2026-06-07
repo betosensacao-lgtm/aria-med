@@ -1,0 +1,136 @@
+{
+  "common": {
+    "loading": "Carregando...",
+    "save": "Salvar",
+    "cancel": "Cancelar",
+    "delete": "Excluir",
+    "edit": "Editar",
+    "back": "Voltar",
+    "next": "Próximo",
+    "confirm": "Confirmar",
+    "search": "Buscar",
+    "or": "ou"
+  },
+  "nav": {
+    "dashboard": "Painel",
+    "appointments": "Consultas",
+    "patients": "Pacientes",
+    "settings": "Configurações",
+    "logout": "Sair",
+    "bookAppointment": "Agendar Consulta",
+    "startTriage": "Triagem com IA"
+  },
+  "auth": {
+    "login": "Entrar",
+    "register": "Criar conta",
+    "email": "E-mail",
+    "password": "Senha",
+    "name": "Nome completo",
+    "phone": "Telefone",
+    "role": "Tipo de conta",
+    "patient": "Paciente",
+    "clinicAdmin": "Clínica / Profissional",
+    "loginTitle": "Bem-vindo de volta",
+    "loginSubtitle": "Entre na sua conta MedBook",
+    "registerTitle": "Crie sua conta",
+    "registerSubtitle": "Comece a gerenciar consultas hoje",
+    "noAccount": "Ainda não tem conta?",
+    "haveAccount": "Já tem uma conta?",
+    "verifyEmail": "Verifique seu e-mail",
+    "verifyEmailMessage": "Enviamos um link de verificação para o seu e-mail."
+  },
+  "booking": {
+    "title": "Encontrar Clínica",
+    "subtitle": "Busque clínicas e agende sua consulta",
+    "searchPlaceholder": "Buscar por especialidade, nome da clínica...",
+    "noResults": "Nenhuma clínica encontrada",
+    "bookNow": "Agendar",
+    "availability": "Disponibilidade",
+    "selectProfessional": "Selecionar profissional",
+    "selectDate": "Selecionar data",
+    "selectTime": "Selecionar horário",
+    "confirming": "Confirmando...",
+    "confirmBooking": "Confirmar Agendamento",
+    "confirmed": "Agendamento Confirmado!",
+    "confirmedMessage": "Sua consulta foi agendada com sucesso.",
+    "noSlots": "Nenhum horário disponível nesta data"
+  },
+  "triage": {
+    "title": "Triagem de Saúde com IA",
+    "subtitle": "Converse com nossa IA para avaliar seus sintomas antes de agendar",
+    "startButton": "Iniciar Triagem",
+    "nameLabel": "Seu nome",
+    "emailLabel": "Seu e-mail",
+    "chatPlaceholder": "Descreva seus sintomas...",
+    "send": "Enviar",
+    "triageComplete": "Triagem Concluída",
+    "urgencyRed": "URGÊNCIA ALTA — Procure atendimento imediato",
+    "urgencyYellow": "MODERADO — Agende em breve",
+    "urgencyGreen": "BAIXO — Consulta de rotina",
+    "suggestedSpecialty": "Especialidade sugerida",
+    "bookNow": "Agendar Consulta",
+    "newTriage": "Iniciar Nova Triagem",
+    "sessionId": "ID da Sessão"
+  },
+  "dashboard": {
+    "title": "Painel",
+    "todayAppointments": "Consultas de Hoje",
+    "totalPatients": "Total de Pacientes",
+    "pendingTriages": "Triagens Pendentes",
+    "upcomingAppointments": "Próximas Consultas"
+  },
+  "appointments": {
+    "title": "Consultas",
+    "status": {
+      "pending": "Pendente",
+      "confirmed": "Confirmado",
+      "cancelled": "Cancelado",
+      "completed": "Concluído",
+      "no_show": "Não compareceu"
+    },
+    "filterAll": "Todos",
+    "date": "Data",
+    "time": "Horário",
+    "patient": "Paciente",
+    "professional": "Profissional",
+    "status_label": "Status",
+    "triageBadge": "Triagem"
+  },
+  "patients": {
+    "title": "Pacientes",
+    "searchPlaceholder": "Buscar pacientes...",
+    "lastVisit": "Última visita",
+    "totalVisits": "Total de visitas",
+    "noPatients": "Nenhum paciente encontrado"
+  },
+  "settings": {
+    "title": "Configurações",
+    "profile": "Perfil",
+    "clinic": "Minha Clínica",
+    "name": "Nome completo",
+    "phone": "Telefone",
+    "clinicName": "Nome da clínica",
+    "specialty": "Especialidade",
+    "address": "Endereço",
+    "city": "Cidade",
+    "state": "Estado",
+    "zipCode": "CEP",
+    "country": "País",
+    "saveChanges": "Salvar alterações",
+    "saved": "Alterações salvas!"
+  },
+  "triageDashboard": {
+    "title": "Sessões de Triagem",
+    "urgency": "Urgência",
+    "patient": "Paciente",
+    "specialty": "Especialidade",
+    "status": "Status",
+    "date": "Data",
+    "noSessions": "Nenhuma sessão de triagem ainda",
+    "status": {
+      "pending": "Pendente",
+      "reviewed": "Revisado",
+      "archived": "Arquivado"
+    }
+  }
+}

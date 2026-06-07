@@ -10,7 +10,7 @@ function getResend(): Resend | null {
   return resend;
 }
 
-const FROM = process.env.EMAIL_FROM ?? "ScheduleClinic <onboarding@resend.dev>";
+const FROM = process.env.EMAIL_FROM ?? "MedBook <onboarding@resend.dev>";
 
 export type SendEmailInput = {
   to: string;

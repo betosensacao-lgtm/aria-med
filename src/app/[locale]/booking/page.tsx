@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import Link from "next/link";
-import { Calendar, SearchX } from "lucide-react";
+import { Calendar, SearchX, Brain } from "lucide-react";
 import { searchClinics } from "@/lib/booking";
 import { ClinicCard } from "./components/ClinicCard";
 import { SearchBar } from "./components/SearchBar";
@@ -8,10 +8,11 @@ import { SearchBar } from "./components/SearchBar";
 export default async function BookingPage({
   searchParams,
 }: {
-  searchParams: Promise<{ specialty?: string; query?: string }>;
+  searchParams: Promise<{ specialty?: string; query?: string; from_triage?: string }>;
 }) {
-  const { specialty, query } = await searchParams;
+  const { specialty, query, from_triage } = await searchParams;
   const clinics = await searchClinics({ specialty, query });
+  const fromTriage = from_triage === "1";
 
   return (
     <div className="min-h-screen bg-[#F4FAFA]">
@@ -23,16 +24,33 @@ export default async function BookingPage({
               <Calendar className="w-4 h-4 text-white" />
             </div>
             <span className="font-syne font-extrabold text-[#003049] tracking-tight">
-              ScheduleClinic
+              MedBook
             </span>
           </Link>
-          <Link href="/auth/login" className="text-sm font-semibold text-[#003049] hover:text-[#0A9396]">
-            Sign in
-          </Link>
+          <div className="flex items-center gap-4">
+            <Link href="/triage" className="flex items-center gap-1.5 text-sm font-semibold text-[#0A9396] hover:text-[#0A9396]/80">
+              <Brain className="w-4 h-4" />
+              AI Triage
+            </Link>
+            <Link href="/auth/login" className="text-sm font-semibold text-[#003049] hover:text-[#0A9396]">
+              Sign in
+            </Link>
+          </div>
         </div>
       </header>
 
       <main className="max-w-6xl mx-auto px-6 py-10 space-y-8">
+        {/* Triage banner */}
+        {fromTriage && specialty && (
+          <div className="flex items-center gap-3 bg-blue-50 border border-blue-200 rounded-xl px-5 py-3.5">
+            <Brain className="w-5 h-5 text-blue-600 shrink-0" />
+            <p className="text-sm text-blue-800">
+              Based on your triage, we&apos;re showing clinics for{" "}
+              <strong className="capitalize">{specialty.replace(/_/g, " ")}</strong>.
+            </p>
+          </div>
+        )}
+
         {/* Hero */}
         <div className="text-center space-y-3 max-w-2xl mx-auto">
           <h1 className="font-syne font-extrabold text-4xl text-[#003049] tracking-tight">

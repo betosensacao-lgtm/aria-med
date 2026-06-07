@@ -1,6 +1,6 @@
 import { db } from "@/db";
-import { appointments, clinics, professionals, users, preAnamnesis } from "@/db/schema";
-import { eq, and, desc, asc, count, gte, lte, inArray, ilike } from "drizzle-orm";
+import { appointments, clinics, professionals, users, preAnamnesis, triageSessions } from "@/db/schema";
+import { eq, and, desc, asc, count, gte, lte, inArray, ilike, isNotNull } from "drizzle-orm";
 import { createServerSupabaseClient } from "@/lib/supabase";
 import { format, startOfMonth, endOfMonth } from "date-fns";
 
@@ -286,4 +286,46 @@ export async function getPatientsWithLastDate(
     ...r,
     lastAppointment: lastDateMap.get(r.id) ?? null,
   }));
+}
+
+// ─── Triages ──────────────────────────────────────────────────────────────────
+
+export async function getTriagesByClinic(clinicId: string) {
+  // Sessions linked to this clinic's appointments
+  const linked = await db
+    .select({
+      sessionId: appointments.triageSessionId,
+    })
+    .from(appointments)
+    .where(and(eq(appointments.clinicId, clinicId), isNotNull(appointments.triageSessionId)));
+
+  const sessionIds = linked.map((r) => r.sessionId!).filter(Boolean);
+
+  if (sessionIds.length === 0) {
+    // Also return unlinked sessions (same email as a patient with appointment in this clinic)
+    return [];
+  }
+
+  return db
+    .select()
+    .from(triageSessions)
+    .where(inArray(triageSessions.id, sessionIds))
+    .orderBy(desc(triageSessions.createdAt));
+}
+
+export async function getPendingTriageCount(clinicId: string) {
+  const linked = await db
+    .select({ sessionId: appointments.triageSessionId })
+    .from(appointments)
+    .where(and(eq(appointments.clinicId, clinicId), isNotNull(appointments.triageSessionId)));
+
+  const sessionIds = linked.map((r) => r.sessionId!).filter(Boolean);
+  if (sessionIds.length === 0) return 0;
+
+  const [result] = await db
+    .select({ count: count() })
+    .from(triageSessions)
+    .where(and(inArray(triageSessions.id, sessionIds), eq(triageSessions.status, "PENDING")));
+
+  return result?.count ?? 0;
 }

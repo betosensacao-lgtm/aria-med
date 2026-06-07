@@ -1,0 +1,136 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "back": "Back",
+    "next": "Next",
+    "confirm": "Confirm",
+    "search": "Search",
+    "or": "or"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "appointments": "Appointments",
+    "patients": "Patients",
+    "settings": "Settings",
+    "logout": "Log out",
+    "bookAppointment": "Book Appointment",
+    "startTriage": "AI Triage"
+  },
+  "auth": {
+    "login": "Log in",
+    "register": "Create account",
+    "email": "Email",
+    "password": "Password",
+    "name": "Full name",
+    "phone": "Phone",
+    "role": "Account type",
+    "patient": "Patient",
+    "clinicAdmin": "Clinic / Professional",
+    "loginTitle": "Welcome back",
+    "loginSubtitle": "Log in to your MedBook account",
+    "registerTitle": "Create your account",
+    "registerSubtitle": "Start managing appointments today",
+    "noAccount": "Don't have an account?",
+    "haveAccount": "Already have an account?",
+    "verifyEmail": "Check your email",
+    "verifyEmailMessage": "We sent a verification link to your email address."
+  },
+  "booking": {
+    "title": "Find a Clinic",
+    "subtitle": "Search for clinics and book your appointment",
+    "searchPlaceholder": "Search by specialty, clinic name...",
+    "noResults": "No clinics found",
+    "bookNow": "Book Now",
+    "availability": "Availability",
+    "selectProfessional": "Select professional",
+    "selectDate": "Select date",
+    "selectTime": "Select time",
+    "confirming": "Confirming...",
+    "confirmBooking": "Confirm Booking",
+    "confirmed": "Booking Confirmed!",
+    "confirmedMessage": "Your appointment has been booked successfully.",
+    "noSlots": "No available slots for this date"
+  },
+  "triage": {
+    "title": "AI Health Triage",
+    "subtitle": "Chat with our AI assistant to assess your symptoms before booking",
+    "startButton": "Start Triage",
+    "nameLabel": "Your name",
+    "emailLabel": "Your email",
+    "chatPlaceholder": "Describe your symptoms...",
+    "send": "Send",
+    "triageComplete": "Triage Complete",
+    "urgencyRed": "HIGH URGENCY — Seek immediate care",
+    "urgencyYellow": "MODERATE — Schedule soon",
+    "urgencyGreen": "LOW — Routine appointment",
+    "suggestedSpecialty": "Suggested specialty",
+    "bookNow": "Book Appointment",
+    "newTriage": "Start New Triage",
+    "sessionId": "Session ID"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "todayAppointments": "Today's Appointments",
+    "totalPatients": "Total Patients",
+    "pendingTriages": "Pending Triages",
+    "upcomingAppointments": "Upcoming Appointments"
+  },
+  "appointments": {
+    "title": "Appointments",
+    "status": {
+      "pending": "Pending",
+      "confirmed": "Confirmed",
+      "cancelled": "Cancelled",
+      "completed": "Completed",
+      "no_show": "No Show"
+    },
+    "filterAll": "All",
+    "date": "Date",
+    "time": "Time",
+    "patient": "Patient",
+    "professional": "Professional",
+    "status_label": "Status",
+    "triageBadge": "Triage"
+  },
+  "patients": {
+    "title": "Patients",
+    "searchPlaceholder": "Search patients...",
+    "lastVisit": "Last visit",
+    "totalVisits": "Total visits",
+    "noPatients": "No patients found"
+  },
+  "settings": {
+    "title": "Settings",
+    "profile": "Profile",
+    "clinic": "My Clinic",
+    "name": "Full name",
+    "phone": "Phone",
+    "clinicName": "Clinic name",
+    "specialty": "Specialty",
+    "address": "Address",
+    "city": "City",
+    "state": "State",
+    "zipCode": "Zip code",
+    "country": "Country",
+    "saveChanges": "Save changes",
+    "saved": "Changes saved!"
+  },
+  "triageDashboard": {
+    "title": "Triage Sessions",
+    "urgency": "Urgency",
+    "patient": "Patient",
+    "specialty": "Specialty",
+    "status": "Status",
+    "date": "Date",
+    "noSessions": "No triage sessions yet",
+    "status": {
+      "pending": "Pending",
+      "reviewed": "Reviewed",
+      "archived": "Archived"
+    }
+  }
+}

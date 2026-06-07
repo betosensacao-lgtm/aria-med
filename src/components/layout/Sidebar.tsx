@@ -10,6 +10,7 @@ import {
   Settings,
   LogOut,
   Calendar as CalIcon,
+  Brain,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { logoutAction } from "@/app/auth/actions";
@@ -20,6 +21,7 @@ type NavItem = { href: string; label: string; icon: typeof LayoutDashboard };
 const clinicNav: NavItem[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/appointments", label: "Appointments", icon: Calendar },
+  { href: "/triages", label: "Triages", icon: Brain },
   { href: "/patients", label: "Patients", icon: Users },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
@@ -27,6 +29,7 @@ const clinicNav: NavItem[] = [
 const patientNav: NavItem[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/appointments", label: "My Appointments", icon: Calendar },
+  { href: "/triage", label: "AI Triage", icon: Brain },
   { href: "/booking", label: "Find Clinics", icon: Search },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
@@ -43,7 +46,7 @@ export function Sidebar({ role }: { role: UserRole }) {
           <CalIcon className="w-4 h-4 text-white" />
         </div>
         <span className="font-syne font-extrabold text-white tracking-tight">
-          ScheduleClinic
+          MedBook
         </span>
       </div>
 
