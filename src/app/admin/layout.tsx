@@ -21,6 +21,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           >
             Contexto da Clínica
           </Link>
+          <a
+            href="/chat"
+            target="_blank"
+            className="px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-teal-50 hover:text-teal-700 transition-colors"
+          >
+            Chat Web
+          </a>
         </nav>
       </aside>
       <main className="flex-1 overflow-auto p-8">{children}</main>

@@ -51,10 +51,8 @@ export const genderEnum = pgEnum("gender", [
   "prefer_not_to_say",
 ]);
 
-// Maps to existing DB enum "urgency_classification" (created by ARIA-Med)
 export const triageUrgencyEnum = pgEnum("urgency_classification", ["RED", "YELLOW", "GREEN"]);
 
-// Maps to existing DB enum "triage_status"
 export const triageStatusEnum = pgEnum("triage_status", ["PENDING", "REVIEWED", "ARCHIVED"]);
 
 export const whatsappSessionStatusEnum = pgEnum("whatsapp_session_status", [
@@ -90,7 +88,6 @@ export const clinics = pgTable("clinics", {
   rating: real("rating").notNull().default(0),
   reviewCount: integer("review_count").notNull().default(0),
   isVerified: boolean("is_verified").notNull().default(false),
-  // Address (flat for simplicity)
   street: text("street"),
   addressNumber: text("address_number"),
   complement: text("complement"),
@@ -100,12 +97,10 @@ export const clinics = pgTable("clinics", {
   zipCode: text("zip_code"),
   country: text("country").default("US"),
   ownerId: uuid("owner_id").notNull().references(() => users.id),
-  // Stripe billing
   stripeCustomerId: text("stripe_customer_id"),
   subscriptionId: text("subscription_id"),
   subscriptionStatus: text("subscription_status"),
   plan: text("plan").notNull().default("free"),
-  // WhatsApp Business integration
   whatsappPhoneNumberId: text("whatsapp_phone_number_id"),
   whatsappAccessToken: text("whatsapp_access_token"),
   whatsappWabaId: text("whatsapp_waba_id"),
@@ -120,7 +115,7 @@ export const professionals = pgTable("professionals", {
   userId: uuid("user_id").references(() => users.id),
   name: text("name").notNull(),
   specialty: text("specialty").notNull(),
-  registrationNumber: text("registration_number"), // CRM/license
+  registrationNumber: text("registration_number"),
   bio: text("bio"),
   avatarUrl: text("avatar_url"),
   rating: real("rating").notNull().default(0),
@@ -128,7 +123,7 @@ export const professionals = pgTable("professionals", {
   availableDays: jsonb("available_days").$type<number[]>().default([1, 2, 3, 4, 5]),
   workingHoursStart: time("working_hours_start").default("08:00"),
   workingHoursEnd: time("working_hours_end").default("18:00"),
-  slotDuration: integer("slot_duration").notNull().default(30), // minutes
+  slotDuration: integer("slot_duration").notNull().default(30),
   breakStart: time("break_start"),
   breakEnd: time("break_end"),
   isActive: boolean("is_active").notNull().default(true),
@@ -140,20 +135,17 @@ export const triageSessions = pgTable("triage_sessions", {
   patientName: text("patient_name").notNull(),
   patientEmail: text("patient_email").notNull(),
   mainSymptom: text("main_symptom"),
-  // DB column is "evolution_time" (from ARIA-Med); kept for backward compat
   evolutionTime: text("evolution_time"),
   painIntensity: integer("pain_intensity"),
   relevantHistory: text("relevant_history"),
-  // DB column/enum is "urgency_classification" (from ARIA-Med)
   urgency: triageUrgencyEnum("urgency_classification"),
   suggestedSpecialty: clinicSpecialtyEnum("suggested_specialty"),
-  // Extra ARIA-Med columns — kept for data continuity
   classificationJustification: text("classification_justification"),
   aiSummary: text("ai_summary"),
   messageCount: integer("message_count").default(0),
   modelUsed: text("model_used"),
   status: triageStatusEnum("status").notNull().default("PENDING"),
-  source: text("source").default("web"), // 'web', 'whatsapp', 'api'
+  source: text("source").default("web"),
   adminNotes: text("admin_notes"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
@@ -187,41 +179,28 @@ export const preAnamnesis = pgTable("pre_anamnesis", {
   id: uuid("id").primaryKey().defaultRandom(),
   appointmentId: uuid("appointment_id").notNull().references(() => appointments.id, { onDelete: "cascade" }),
   patientId: uuid("patient_id").notNull().references(() => users.id),
-
-  // Personal
   fullName: text("full_name").notNull(),
   dateOfBirth: date("date_of_birth"),
   gender: genderEnum("gender"),
   phone: text("phone"),
   emergencyContact: text("emergency_contact"),
-
-  // Chief complaint
   chiefComplaint: text("chief_complaint").notNull(),
   symptomsDescription: text("symptoms_description"),
   symptomsDuration: text("symptoms_duration"),
-  painScale: integer("pain_scale"), // 0-10
-
-  // Medical history
+  painScale: integer("pain_scale"),
   currentMedications: jsonb("current_medications").$type<string[]>().default([]),
   allergies: jsonb("allergies").$type<string[]>().default([]),
   chronicConditions: jsonb("chronic_conditions").$type<string[]>().default([]),
   previousSurgeries: text("previous_surgeries"),
   familyHistory: text("family_history"),
-
-  // Vitals
   bloodType: text("blood_type"),
   height: real("height"),
   weight: real("weight"),
-
-  // Insurance
   hasInsurance: boolean("has_insurance").notNull().default(false),
   insuranceProvider: text("insurance_provider"),
   insurancePlanNumber: text("insurance_plan_number"),
-
-  // Consent
   consentGiven: boolean("consent_given").notNull().default(false),
   consentDate: timestamp("consent_date"),
-
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -246,6 +225,23 @@ export const clinicContext = pgTable("clinic_context", {
   key: text("key").notNull(),
   content: text("content").notNull(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const chatSessions = pgTable("chat_sessions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  sessionId: text("session_id").notNull().unique(),
+  clinicId: text("clinic_id"),
+  userIdentifier: text("user_identifier"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const chatMessages = pgTable("chat_messages", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  sessionId: text("session_id").notNull(),
+  role: text("role", { enum: ["user", "assistant"] }).notNull(),
+  content: text("content").notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
