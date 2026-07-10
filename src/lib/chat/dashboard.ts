@@ -1,6 +1,6 @@
 import { db } from "@/db";
 import { chatSessions, chatMessages } from "@/db/schema";
-import { eq, sql, desc } from "drizzle-orm";
+import { eq, desc, sql } from "drizzle-orm";
 
 export interface DashboardStats {
   totalSessions: number;
@@ -18,55 +18,62 @@ export interface DashboardStats {
 }
 
 export async function getDashboardStats(clinicId?: string): Promise<DashboardStats> {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
 
-  const sessionFilter = clinicId
-    ? eq(chatSessions.clinicId, clinicId)
-    : sql`true`;
+  const hasFilter = !!clinicId;
 
-  const messageFilter = clinicId
-    ? eq(chatMessages.sessionId, sql`(SELECT session_id FROM chat_sessions WHERE clinic_id = ${clinicId})`)
-    : sql`true`;
+  const [totalSessions] = hasFilter
+    ? await db.select({ value: sql<number>`count(*)::int` }).from(chatSessions).where(eq(chatSessions.clinicId, clinicId!))
+    : await db.select({ value: sql<number>`count(*)::int` }).from(chatSessions);
 
-  const [totalSessions] = await db
-    .select({ count: sql<number>`count(*)::int` })
-    .from(chatSessions)
-    .where(sessionFilter);
-
-  const [sessionsToday] = await db
-    .select({ count: sql<number>`count(*)::int` })
-    .from(chatSessions)
-    .where(sql`${sessionFilter} AND created_at >= ${today}`);
+  const [sessionsToday] = hasFilter
+    ? await db.select({ value: sql<number>`count(*)::int` }).from(chatSessions).where(sql`clinic_id = ${clinicId} AND created_at >= ${todayStart}`)
+    : await db.select({ value: sql<number>`count(*)::int` }).from(chatSessions).where(sql`created_at >= ${todayStart}`);
 
   const [totalMessages] = await db
-    .select({ count: sql<number>`count(*)::int` })
+    .select({ value: sql<number>`count(*)::int` })
     .from(chatMessages);
 
   const [messagesToday] = await db
-    .select({ count: sql<number>`count(*)::int` })
+    .select({ value: sql<number>`count(*)::int` })
     .from(chatMessages)
-    .where(sql`created_at >= ${today}`);
+    .where(sql`created_at >= ${todayStart}`);
 
-  const recentSessions = await db
-    .select({
-      sessionId: chatSessions.sessionId,
-      patientName: chatSessions.patientName,
-      patientPhone: chatSessions.patientPhone,
-      patientEmail: chatSessions.patientEmail,
-      messageCount: sql<number>`(SELECT count(*)::int FROM ${chatMessages} WHERE ${chatMessages.sessionId} = ${chatSessions.sessionId})`,
-      createdAt: chatSessions.createdAt,
-    })
-    .from(chatSessions)
-    .where(sessionFilter)
-    .orderBy(desc(chatSessions.createdAt))
-    .limit(20);
+  const rows = hasFilter
+    ? await db.select({
+        sessionId: chatSessions.sessionId,
+        patientName: chatSessions.patientName,
+        patientPhone: chatSessions.patientPhone,
+        patientEmail: chatSessions.patientEmail,
+        createdAt: chatSessions.createdAt,
+      }).from(chatSessions).where(eq(chatSessions.clinicId, clinicId!)).orderBy(desc(chatSessions.createdAt)).limit(20)
+    : await db.select({
+        sessionId: chatSessions.sessionId,
+        patientName: chatSessions.patientName,
+        patientPhone: chatSessions.patientPhone,
+        patientEmail: chatSessions.patientEmail,
+        createdAt: chatSessions.createdAt,
+      }).from(chatSessions).orderBy(desc(chatSessions.createdAt)).limit(20);
+
+  const recentSessions = [];
+  for (const row of rows) {
+    const [msgCount] = await db
+      .select({ value: sql<number>`count(*)::int` })
+      .from(chatMessages)
+      .where(eq(chatMessages.sessionId, row.sessionId));
+
+    recentSessions.push({
+      ...row,
+      messageCount: msgCount?.value ?? 0,
+    });
+  }
 
   return {
-    totalSessions: totalSessions?.count ?? 0,
-    sessionsToday: sessionsToday?.count ?? 0,
-    totalMessages: totalMessages?.count ?? 0,
-    messagesToday: messagesToday?.count ?? 0,
+    totalSessions: totalSessions?.value ?? 0,
+    sessionsToday: sessionsToday?.value ?? 0,
+    totalMessages: totalMessages?.value ?? 0,
+    messagesToday: messagesToday?.value ?? 0,
     recentSessions,
   };
 }
