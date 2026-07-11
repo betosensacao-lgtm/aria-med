@@ -6,7 +6,7 @@ import { ChatMessages } from "@/components/chat/ChatMessages";
 interface Message {
   role: "user" | "assistant";
   content: string;
-  timestamp: string;
+  timestamp?: string;
 }
 
 function getSessionId(): string {
@@ -24,7 +24,6 @@ export default function ChatEmbedPage() {
     {
       role: "assistant",
       content: "Ola! Sou o assistente virtual da clinica. Como posso ajudar?",
-      timestamp: new Date().toISOString(),
     },
   ]);
   const [input, setInput] = useState("");
