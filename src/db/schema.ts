@@ -61,7 +61,29 @@ export const whatsappSessionStatusEnum = pgEnum("whatsapp_session_status", [
   "abandoned",
 ]);
 
+export const billingCycleEnum = pgEnum("billing_cycle", [
+  "monthly",
+  "yearly",
+]);
+
 // ─── Tables ──────────────────────────────────────────────────────────────────
+
+export const pricingPlans = pgTable("pricing_plans", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull(),
+  slug: text("slug").notNull().unique(),
+  description: text("description").notNull(),
+  priceMonthly: integer("price_monthly").notNull(), // in cents (R$ 9700 = R$ 97)
+  priceYearly: integer("price_yearly"), // in cents, nullable = same as monthly
+  maxProfessionals: integer("max_professionals"), // null = unlimited
+  maxConversationsMonthly: integer("max_conversations_monthly"), // null = unlimited
+  features: jsonb("features").$type<string[]>().notNull().default([]),
+  highlighted: boolean("highlighted").notNull().default(false),
+  sortOrder: integer("sort_order").notNull().default(0),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
 
 export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -95,12 +117,20 @@ export const clinics = pgTable("clinics", {
   city: text("city"),
   state: text("state"),
   zipCode: text("zip_code"),
-  country: text("country").default("US"),
+  country: text("country").default("BR"),
   ownerId: uuid("owner_id").notNull().references(() => users.id),
+  // Pricing
+  planId: uuid("plan_id").references(() => pricingPlans.id),
+  billingCycle: billingCycleEnum("billing_cycle").default("monthly"),
+  trialEndsAt: timestamp("trial_ends_at"),
+  conversationsUsedMonthly: integer("conversations_used_monthly").notNull().default(0),
+  conversationMonthResetAt: timestamp("conversation_month_reset_at"),
+  // Legacy billing columns (deprecated)
   stripeCustomerId: text("stripe_customer_id"),
   subscriptionId: text("subscription_id"),
   subscriptionStatus: text("subscription_status"),
   plan: text("plan").notNull().default("free"),
+  // WhatsApp
   whatsappPhoneNumberId: text("whatsapp_phone_number_id"),
   whatsappAccessToken: text("whatsapp_access_token"),
   whatsappWabaId: text("whatsapp_waba_id"),
@@ -291,6 +321,7 @@ export const clinicsRelations = relations(clinics, ({ one, many }) => ({
   owner: one(users, { fields: [clinics.ownerId], references: [users.id] }),
   professionals: many(professionals),
   appointments: many(appointments),
+  planRef: one(pricingPlans, { fields: [clinics.planId], references: [pricingPlans.id] }),
 }));
 
 export const professionalsRelations = relations(professionals, ({ one, many }) => ({
