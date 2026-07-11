@@ -161,7 +161,7 @@ const TESTIMONIALS = [
     name: "Dra. Beatriz Almeida",
     role: "Odonto Prime — Belo Horizonte, MG",
     avatar: "BA",
-  ],
+  },
 ];
 
 export default function MarketingPage() {

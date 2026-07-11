@@ -1,6 +1,26 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { verifySessionToken, COOKIE_NAME } from "@/lib/auth";
+import { jwtVerify } from "jose";
+
+const COOKIE_NAME = "admin_session";
+const JWT_SECRET_RAW = process.env.JWT_SECRET || process.env.ADMIN_PASSWORD || "medbook-dev-secret-key-change-in-production";
+const JWT_SECRET = new TextEncoder().encode(JWT_SECRET_RAW);
+
+interface SessionPayload {
+  userId: string;
+  email: string;
+  role: "admin" | "super_admin";
+  clinicId: string | null;
+}
+
+async function verifySessionToken(token: string): Promise<SessionPayload | null> {
+  try {
+    const { payload } = await jwtVerify(token, JWT_SECRET);
+    return payload as unknown as SessionPayload;
+  } catch {
+    return null;
+  }
+}
 
 export default async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;

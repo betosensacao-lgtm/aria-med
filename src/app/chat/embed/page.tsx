@@ -20,7 +20,13 @@ function getSessionId(): string {
 }
 
 export default function ChatEmbedPage() {
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<Message[]>([
+    {
+      role: "assistant",
+      content: "Ola! Sou o assistente virtual da clinica. Como posso ajudar?",
+      timestamp: new Date().toISOString(),
+    },
+  ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [sessionId, setSessionId] = useState("");

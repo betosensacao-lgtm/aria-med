@@ -20,7 +20,13 @@ function getSessionId(): string {
 }
 
 export default function ChatPage() {
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<Message[]>([
+    {
+      role: "assistant",
+      content: "Ola! Sou o assistente virtual da clinica. Como posso ajudar? Posso esclarecer duvidas, agendar consultas ou coletar dados para pre-anamnese.",
+      timestamp: new Date().toISOString(),
+    },
+  ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [sessionId, setSessionId] = useState("");
