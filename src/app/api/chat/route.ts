@@ -5,6 +5,7 @@ import { getOrCreateSession, getChatMessages, saveChatMessage } from "@/lib/chat
 import { db } from "@/db";
 import { chatSessions } from "@/db/schema";
 import { eq } from "drizzle-orm";
+import { applyGuardrails, validateOutput, logSecurityEvent } from "@/lib/security/guardrails";
 
 const NAME_PATTERNS = [
   /meu nome (?:é|e) (.+?)(?:,|\.|!|\?|$)/i,
@@ -30,6 +31,28 @@ function extractPhone(text: string): string | null {
     return digits;
   }
   return null;
+}
+
+// Rate limiting: simple in-memory store
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+const RATE_LIMIT = 30; // messages per minute
+const RATE_WINDOW = 60 * 1000;
+
+function checkRateLimit(sessionId: string): boolean {
+  const now = Date.now();
+  const entry = rateLimitMap.get(sessionId);
+
+  if (!entry || now > entry.resetAt) {
+    rateLimitMap.set(sessionId, { count: 1, resetAt: now + RATE_WINDOW });
+    return true;
+  }
+
+  if (entry.count >= RATE_LIMIT) {
+    return false;
+  }
+
+  entry.count++;
+  return true;
 }
 
 async function updatePatientInfo(sessionId: string) {
@@ -59,6 +82,17 @@ export async function POST(request: NextRequest) {
     const clinicId = process.env.CLINIC_ID || "default";
     const sessionId = incomingId || crypto.randomUUID();
 
+    // Rate limiting
+    if (!checkRateLimit(sessionId)) {
+      return NextResponse.json(
+        { error: "Limite de mensagens atingido. Aguarde um momento." },
+        { status: 429 }
+      );
+    }
+
+    // Apply guardrails (input sanitization + injection detection)
+    const { safeMessage } = applyGuardrails(message, sessionId, clinicId);
+
     await getOrCreateSession(sessionId, clinicId);
 
     const history = await getChatMessages(sessionId);
@@ -68,16 +102,30 @@ export async function POST(request: NextRequest) {
     );
 
     const result = await runChatGraph({
-      messages: [...historyMessages, new HumanMessage(message)],
+      messages: [...historyMessages, new HumanMessage(safeMessage)],
       sessionId,
       clinicId,
     }, sessionId);
 
     const lastMessage = result.messages[result.messages.length - 1];
-    const reply =
+    let reply =
       typeof lastMessage?.content === "string"
         ? lastMessage.content
         : "Desculpe, ocorreu um erro ao processar sua mensagem.";
+
+    // Validate output (ensure no system prompt leakage)
+    const outputCheck = validateOutput(reply);
+    if (!outputCheck.safe) {
+      logSecurityEvent({
+        type: "output_leak",
+        sessionId,
+        clinicId,
+        message: "Output contained restricted patterns",
+        patterns: ["output_validation"],
+        timestamp: new Date(),
+      });
+      reply = outputCheck.cleaned;
+    }
 
     await saveChatMessage(sessionId, "user", message);
     await saveChatMessage(sessionId, "assistant", reply);

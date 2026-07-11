@@ -1,16 +1,52 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createSessionToken, COOKIE_NAME } from "@/lib/auth";
+import { createSessionToken, verifyPassword, getAdminByEmail, updateLastLogin, COOKIE_NAME } from "@/lib/auth";
 
 export async function POST(request: NextRequest) {
   try {
-    const { password } = await request.json();
+    const { email, password } = await request.json();
 
-    if (!password || password !== process.env.ADMIN_PASSWORD) {
-      return NextResponse.json({ error: "Senha invalida" }, { status: 401 });
+    if (!email || !password) {
+      return NextResponse.json(
+        { error: "Email e senha sao obrigatorios" },
+        { status: 400 }
+      );
     }
 
-    const token = await createSessionToken();
-    const response = NextResponse.json({ success: true });
+    const user = await getAdminByEmail(email);
+    if (!user || !user.isActive) {
+      return NextResponse.json(
+        { error: "Credenciais invalidas" },
+        { status: 401 }
+      );
+    }
+
+    const valid = await verifyPassword(password, user.passwordHash);
+    if (!valid) {
+      return NextResponse.json(
+        { error: "Credenciais invalidas" },
+        { status: 401 }
+      );
+    }
+
+    const token = await createSessionToken({
+      userId: user.id,
+      email: user.email,
+      role: user.role as "admin" | "super_admin",
+      clinicId: user.clinicId,
+    });
+
+    await updateLastLogin(user.id);
+
+    const response = NextResponse.json({
+      success: true,
+      user: {
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        clinicId: user.clinicId,
+      },
+    });
+
     response.cookies.set(COOKIE_NAME, token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
@@ -20,7 +56,11 @@ export async function POST(request: NextRequest) {
     });
 
     return response;
-  } catch {
-    return NextResponse.json({ error: "Erro interno" }, { status: 500 });
+  } catch (error) {
+    console.error("[Login API] Error:", error);
+    return NextResponse.json(
+      { error: "Erro interno do servidor" },
+      { status: 500 }
+    );
   }
 }

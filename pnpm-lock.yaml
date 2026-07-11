@@ -14,6 +14,9 @@ importers:
       '@langchain/langgraph':
         specifier: ^1.4.7
         version: 1.4.7(@langchain/core@1.2.1(openai@6.45.0(ws@8.21.0)(zod@3.25.76))(ws@8.21.0))(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(zod@3.25.76)
+      bcryptjs:
+        specifier: ^3.0.3
+        version: 3.0.3
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -29,6 +32,9 @@ importers:
       google-auth-library:
         specifier: ^9.15.1
         version: 9.15.1
+      jose:
+        specifier: ^6.2.3
+        version: 6.2.3
       lucide-react:
         specifier: ^0.468.0
         version: 0.468.0(react@19.2.7)
@@ -1445,6 +1451,10 @@ packages:
     engines: {node: '>=6.0.0'}
     hasBin: true
 
+  bcryptjs@3.0.3:
+    resolution: {integrity: sha512-GlF5wPWnSa/X5LKM1o0wz0suXIINz1iHRLvTS+sLyi7XPbe5ycmYI3DlZqVGZZtDgl4DmasFg7gOB3JYbphV5g==}
+    hasBin: true
+
   better-sqlite3@12.11.1:
     resolution: {integrity: sha512-dq9AtApgg5PGFtBzPFSBl3HZQjHok5gaQCM6zh2Yk0aSmDCs1CbnVI8/HgASQkNKsWFpseIO9beg5xxpYhbIfA==}
     engines: {node: 20.x || 22.x || 23.x || 24.x || 25.x || 26.x}
@@ -2691,6 +2701,9 @@ packages:
   jiti@1.21.7:
     resolution: {integrity: sha512-/imKNG4EbWNrVjoNC/1H5/9GFy+tqjGBHCaSsN+P2RnPqjsLmv6UD3Ej+Kj8nBWaRAwyk7kK5ZUc+OEatnTR3A==}
     hasBin: true
+
+  jose@6.2.3:
+    resolution: {integrity: sha512-YYVDInQKFJfR/xa3ojUTl8c2KoTwiL1R5Wg9YCydwH0x0B9grbzlg5HC7mMjCtUJjbQ/YnGEZIhI5tCgfTb4Hw==}
 
   js-tiktoken@1.0.21:
     resolution: {integrity: sha512-biOj/6M5qdgx5TKjDnFT1ymSpM5tbd3ylwDtrQvFQSu0Z7bBYko2dF+W/aUkXUPuk6IVpRxk/3Q2sHOzGlS36g==}
@@ -5172,6 +5185,8 @@ snapshots:
 
   baseline-browser-mapping@2.10.41: {}
 
+  bcryptjs@3.0.3: {}
+
   better-sqlite3@12.11.1:
     dependencies:
       bindings: 1.5.0
@@ -6772,6 +6787,8 @@ snapshots:
       - ts-node
 
   jiti@1.21.7: {}
+
+  jose@6.2.3: {}
 
   js-tiktoken@1.0.21:
     dependencies:

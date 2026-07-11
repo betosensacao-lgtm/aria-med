@@ -228,6 +228,43 @@ export const clinicContext = pgTable("clinic_context", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+export const adminUsers = pgTable("admin_users", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  email: text("email").notNull().unique(),
+  passwordHash: text("password_hash").notNull(),
+  name: text("name").notNull(),
+  role: text("role", { enum: ["admin", "super_admin"] }).notNull().default("admin"),
+  clinicId: uuid("clinic_id").references(() => clinics.id, { onDelete: "set null" }),
+  isActive: boolean("is_active").notNull().default(true),
+  lastLoginAt: timestamp("last_login_at"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const passwordResetTokens = pgTable("password_reset_tokens", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").notNull().references(() => adminUsers.id, { onDelete: "cascade" }),
+  tokenHash: text("token_hash").notNull().unique(),
+  expiresAt: timestamp("expires_at").notNull(),
+  used: boolean("used").notNull().default(false),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const documents = pgTable("documents", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  clinicId: uuid("clinic_id").notNull().references(() => clinics.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  fileName: text("file_name").notNull(),
+  fileType: text("file_type").notNull(),
+  fileSize: integer("file_size").notNull(),
+  content: text("content").notNull(),
+  chunkCount: integer("chunk_count").notNull().default(0),
+  status: text("status", { enum: ["processing", "ready", "error"] }).notNull().default("processing"),
+  uploadedBy: uuid("uploaded_by").references(() => adminUsers.id),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
 export const chatSessions = pgTable("chat_sessions", {
   id: uuid("id").primaryKey().defaultRandom(),
   sessionId: text("session_id").notNull().unique(),
@@ -288,4 +325,12 @@ export const whatsappSessionsRelations = relations(whatsappSessions, ({ one }) =
   clinic: one(clinics, { fields: [whatsappSessions.clinicId], references: [clinics.id] }),
   triageSession: one(triageSessions, { fields: [whatsappSessions.triageSessionId], references: [triageSessions.id] }),
   appointment: one(appointments, { fields: [whatsappSessions.appointmentId], references: [appointments.id] }),
+}));
+
+export const adminUsersRelations = relations(adminUsers, ({ one }) => ({
+  clinic: one(clinics, { fields: [adminUsers.clinicId], references: [clinics.id] }),
+}));
+
+export const passwordResetTokensRelations = relations(passwordResetTokens, ({ one }) => ({
+  user: one(adminUsers, { fields: [passwordResetTokens.userId], references: [adminUsers.id] }),
 }));

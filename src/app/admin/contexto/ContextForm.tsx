@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { upsertContextEntry } from "./actions";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 
 const PRESET_KEYS = [
   "horarios_de_funcionamento",
@@ -63,14 +65,14 @@ export function ContextForm({ clinicId }: Props) {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+        <label className="block text-sm font-medium text-gray-700 mb-1.5">
           Tipo de Informacao
         </label>
-        <div className="flex gap-2 mb-2">
+        <div className="flex gap-2 mb-3">
           <button
             type="button"
             onClick={() => setUseCustom(false)}
-            className={`px-3 py-1 text-xs rounded-full border transition-colors ${
+            className={`px-4 py-1.5 text-sm rounded-xl border transition-colors ${
               !useCustom
                 ? "bg-teal-50 border-teal-300 text-teal-700"
                 : "border-gray-200 text-gray-500 hover:border-gray-300"
@@ -81,7 +83,7 @@ export function ContextForm({ clinicId }: Props) {
           <button
             type="button"
             onClick={() => setUseCustom(true)}
-            className={`px-3 py-1 text-xs rounded-full border transition-colors ${
+            className={`px-4 py-1.5 text-sm rounded-xl border transition-colors ${
               useCustom
                 ? "bg-teal-50 border-teal-300 text-teal-700"
                 : "border-gray-200 text-gray-500 hover:border-gray-300"
@@ -92,18 +94,16 @@ export function ContextForm({ clinicId }: Props) {
         </div>
 
         {useCustom ? (
-          <input
-            type="text"
+          <Input
             value={customKey}
             onChange={(e) => setCustomKey(e.target.value)}
             placeholder="Ex: promocoes, avisos_importantes"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
           />
         ) : (
           <select
             value={key}
             onChange={(e) => setKey(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+            className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all"
           >
             <option value="">Selecione...</option>
             {PRESET_KEYS.map((k) => (
@@ -116,7 +116,7 @@ export function ContextForm({ clinicId }: Props) {
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+        <label className="block text-sm font-medium text-gray-700 mb-1.5">
           Conteudo
         </label>
         <p className="text-xs text-gray-400 mb-2">
@@ -127,13 +127,13 @@ export function ContextForm({ clinicId }: Props) {
           onChange={(e) => setContent(e.target.value)}
           rows={6}
           placeholder="Ex: Atendemos de segunda a sexta das 8h as 18h e sabado das 8h as 12h..."
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-y"
+          className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-y transition-all"
         />
       </div>
 
       {message && (
         <div
-          className={`px-3 py-2 rounded-lg text-sm ${
+          className={`px-4 py-3 rounded-xl text-sm ${
             message.type === "success"
               ? "bg-green-50 text-green-700 border border-green-200"
               : "bg-red-50 text-red-700 border border-red-200"
@@ -143,13 +143,9 @@ export function ContextForm({ clinicId }: Props) {
         </div>
       )}
 
-      <button
-        type="submit"
-        disabled={saving}
-        className="px-4 py-2 bg-teal-600 text-white text-sm font-medium rounded-lg hover:bg-teal-700 disabled:opacity-50 transition-colors"
-      >
-        {saving ? "Salvando..." : "Salvar"}
-      </button>
+      <Button type="submit" loading={saving} disabled={!content.trim()}>
+        Salvar
+      </Button>
     </form>
   );
 }

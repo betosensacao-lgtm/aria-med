@@ -1,6 +1,7 @@
 import { AIMessage, HumanMessage } from "@langchain/core/messages";
 import { ai, CHAT_MODEL } from "@/lib/ai";
 import { getClinicContext } from "@/lib/rag/knowledge-base";
+import { hardenSystemPrompt, sanitizeInput, validateOutput } from "@/lib/security/guardrails";
 import type { ChatStateType, Intent } from "./state";
 
 const ROUTER_PROMPT = `Você é um roteador para uma clínica médica.
@@ -19,7 +20,10 @@ Responda APENAS com a intenção (uma palavra, maiúscula, sem acentos).`;
 
 export async function routerNode(state: ChatStateType): Promise<Partial<ChatStateType>> {
   const lastMessage = state.messages[state.messages.length - 1];
-  const userMessage = (lastMessage?.content as string) || "";
+  const rawMessage = (lastMessage?.content as string) || "";
+
+  // Sanitize input before processing
+  const { clean: userMessage } = sanitizeInput(rawMessage);
 
   try {
     const completion = await ai.chat.completions.create({
@@ -67,14 +71,18 @@ export async function doubtResolutionNode(
     .map((m) => `${m instanceof HumanMessage ? "Paciente" : "Assistente"}: ${m.content}`)
     .join("\n");
 
+  // Use hardened system prompt
+  const systemPrompt = hardenSystemPrompt(
+    DOUBT_SYSTEM_PROMPT
+      .replace("{context}", context || "Nenhuma informacao cadastrada.")
+      .replace("{history}", history)
+  );
+
   try {
     const completion = await ai.chat.completions.create({
       model: CHAT_MODEL,
       messages: [
-        {
-          role: "system",
-          content: DOUBT_SYSTEM_PROMPT.replace("{context}", context || "Nenhuma informação cadastrada.").replace("{history}", history),
-        },
+        { role: "system", content: systemPrompt },
         {
           role: "user",
           content: (state.messages[state.messages.length - 1]?.content as string) || "",
@@ -84,7 +92,14 @@ export async function doubtResolutionNode(
       max_tokens: 1024,
     });
 
-    const response = completion.choices[0]?.message?.content || "Desculpe, não consegui processar sua pergunta.";
+    let response = completion.choices[0]?.message?.content || "Desculpe, nao consegui processar sua pergunta.";
+
+    // Validate output for security
+    const outputCheck = validateOutput(response);
+    if (!outputCheck.safe) {
+      response = outputCheck.cleaned;
+    }
+
     return { messages: [new AIMessage(response)], completed: true };
   } catch (error) {
     return {
@@ -116,6 +131,9 @@ export async function schedulingNode(
       role: m instanceof HumanMessage ? "user" as const : "assistant" as const,
       content: m.content as string,
     }));
+
+  // Use hardened system prompt
+  const systemPrompt = hardenSystemPrompt(SCHEDULING_SYSTEM_PROMPT);
 
   const tools = [
     {
@@ -174,7 +192,7 @@ export async function schedulingNode(
     const completion = await ai.chat.completions.create({
       model: CHAT_MODEL,
       messages: [
-        { role: "system", content: SCHEDULING_SYSTEM_PROMPT },
+        { role: "system", content: systemPrompt },
         ...history,
       ],
       tools,
@@ -214,7 +232,7 @@ export async function schedulingNode(
       const followUp = await ai.chat.completions.create({
         model: CHAT_MODEL,
         messages: [
-          { role: "system", content: SCHEDULING_SYSTEM_PROMPT },
+          { role: "system", content: systemPrompt },
           ...history,
           { role: "assistant", content: assistantMessage.content || null, tool_calls: assistantMessage.tool_calls },
           ...toolResults,
@@ -266,6 +284,9 @@ export async function preAnamnesisNode(
       content: m.content as string,
     }));
 
+  // Use hardened system prompt
+  const systemPrompt = hardenSystemPrompt(PRE_ANAMNESE_SYSTEM_PROMPT);
+
   const tools = [
     {
       type: "function" as const,
@@ -289,12 +310,11 @@ export async function preAnamnesisNode(
       },
     },
   ];
-
   try {
     const completion = await ai.chat.completions.create({
       model: CHAT_MODEL,
       messages: [
-        { role: "system", content: PRE_ANAMNESE_SYSTEM_PROMPT },
+        { role: "system", content: systemPrompt },
         ...history,
       ],
       tools,
@@ -309,12 +329,13 @@ export async function preAnamnesisNode(
     if (assistantMessage.tool_calls?.length) {
       const { default: toolsModule } = await import("./tools");
       const args = JSON.parse(assistantMessage.tool_calls[0].function.arguments);
+
       const result = await toolsModule.savePreAnamnesisTool.func(args);
 
       return {
         messages: [
           new AIMessage(
-            "Pré-anamnese concluída! Seus dados foram registrados com sucesso. Obrigado!"
+            "Pre-anamnese concluida! Seus dados foram registrados com sucesso. Obrigado!"
           ),
         ],
         patientData: { ...args, collectionComplete: true },
@@ -323,7 +344,7 @@ export async function preAnamnesisNode(
     }
 
     return {
-      messages: [new AIMessage(assistantMessage.content || "Vamos iniciar sua pré-anamnese.")],
+      messages: [new AIMessage(assistantMessage.content || "Vamos iniciar sua pre-anamnese.")],
     };
   } catch (error) {
     return {
