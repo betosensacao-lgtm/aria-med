@@ -1,6 +1,6 @@
 import { db } from "@/db";
 import { chatSessions, chatMessages } from "@/db/schema";
-import { eq, sql, and, gte, desc } from "drizzle-orm";
+import { eq, sql, and, gte, lt, desc } from "drizzle-orm";
 
 export interface HourlyDistribution {
   hour: number;
@@ -120,7 +120,7 @@ export async function getChatAnalytics(
         and(
           eq(chatSessions.clinicId, clinicId),
           gte(chatSessions.createdAt, date),
-          sql`${chatSessions.createdAt} < ${nextDate}`
+          lt(chatSessions.createdAt, nextDate)
         )
       );
 
@@ -132,7 +132,7 @@ export async function getChatAnalytics(
         and(
           eq(chatSessions.clinicId, clinicId),
           gte(chatMessages.createdAt, date),
-          sql`${chatMessages.createdAt} < ${nextDate}`
+          lt(chatMessages.createdAt, nextDate)
         )
       );
 

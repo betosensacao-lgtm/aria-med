@@ -11,7 +11,7 @@ export async function GET() {
     const plans = await db
       .select()
       .from(pricingPlans)
-      .where(asc(pricingPlans.sortOrder));
+      .orderBy(asc(pricingPlans.sortOrder));
 
     return NextResponse.json(plans);
   } catch (error) {
