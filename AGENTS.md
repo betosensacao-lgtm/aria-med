@@ -51,7 +51,7 @@
 
 - **`strict: false`** no `tsconfig.json` — tipos relaxados, mas evite `any`.
 - **`ignoreBuildErrors: true`** no `next.config.ts` — build nunca falha por TS, mas erros aparecem no log.
-- **Middleware** (`src/middleware.ts`) protege rotas `/admin/:path*`. Rotas publicas: login, signup, forgot/reset password. Le o cookie `admin_session` e valida JWT.
+- **Middleware** (`src/proxy.ts`) protege rotas `/admin/:path*`. Rotas publicas: login, signup, forgot/reset password. Le o cookie `admin_session` e valida JWT. (Next.js 16 usa `proxy.ts`, nao `middleware.ts`)
 - **README.md** descreve arquitetura SaaS antiga (Stripe, Resend, i18n, cron reminders). Projeto real e chatbot web-first com Google Calendar.
 - **Schema** (`src/db/schema.ts`) ainda tem colunas legadas: `stripeCustomerId`, `subscriptionId`, `supabaseId`. Nao sao usadas mas estao no banco.
 - **`src/lib/langgraph/persistence.ts`** exporta SqliteSaver mas `graph.ts` usa `MemorySaver` direto. O persistence nao esta conectado.

@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
     }
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-    const session = await createCheckoutSession({
+    const checkoutSession = await createCheckoutSession({
       priceId,
       clinicId,
       clinicName: clinic.name,
@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
       .set({ billingCycle: billingCycle || "monthly" })
       .where(eq(clinics.id, clinicId));
 
-    return NextResponse.json({ url: session.url });
+    return NextResponse.json({ url: checkoutSession.url });
   } catch (error: any) {
     console.error("[Checkout API] Error:", error);
     return NextResponse.json({ error: error.message || "Internal error" }, { status: 500 });
