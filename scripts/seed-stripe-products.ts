@@ -16,7 +16,7 @@ async function main() {
     process.exit(1);
   }
 
-  const stripe = new Stripe(stripeKey, { apiVersion: "2025-03-31.feature" });
+  const stripe = new Stripe(stripeKey);
 
   const client = postgres(process.env.DIRECT_URL || process.env.DATABASE_URL!, {
     prepare: false,
