@@ -1,4 +1,4 @@
-import { StateGraph, START, END, MemorySaver } from "@langchain/langgraph";
+import { StateGraph, START, END } from "@langchain/langgraph";
 import { ChatState, type ChatStateType } from "./state";
 import {
   routerNode,
@@ -12,6 +12,7 @@ import {
   routeAfterScheduling,
   routeAfterPreAnamnesis,
 } from "./edges";
+import { getCheckpointer } from "./persistence";
 import type { RunnableConfig } from "@langchain/core/runnables";
 
 function createChatGraph() {
@@ -38,7 +39,7 @@ function createChatGraph() {
     });
 }
 
-const checkpointer = new MemorySaver();
+const checkpointer = getCheckpointer();
 export const chatGraph = createChatGraph().compile({ checkpointer });
 
 export type ChatGraphInput = typeof ChatState.State;
@@ -101,11 +102,11 @@ export async function* streamChatGraph(
 
     if (Array.isArray(chunk) && chunk.length === 2) {
       const [, nodeState] = chunk;
-      if (typeof nodeState === "object" && nodeState !== null) {
+      if (typeof nodeState === "object" && nodeState !== null && !(nodeState instanceof Uint8Array)) {
         nodeEntries = Object.entries(nodeState as Record<string, unknown>);
       }
-    } else if (typeof chunk === "object" && chunk !== null) {
-      nodeEntries = Object.entries(chunk as Record<string, unknown>);
+    } else if (typeof chunk === "object" && chunk !== null && !(chunk instanceof Uint8Array)) {
+      nodeEntries = Object.entries(chunk as unknown as Record<string, unknown>);
     }
 
     for (const [nodeName, nodeState] of nodeEntries) {
@@ -113,9 +114,9 @@ export async function* streamChatGraph(
 
       yield { type: "node_start", node: nodeName };
 
-      const messages = (nodeState as Record<string, unknown>)?.messages as Array<unknown> | undefined;
+      const messages = (nodeState as unknown as Record<string, unknown>)?.messages as Array<unknown> | undefined;
       if (messages?.length) {
-        const lastMsg = messages[messages.length - 1] as Record<string, unknown>;
+        const lastMsg = messages[messages.length - 1] as unknown as Record<string, unknown>;
         if (lastMsg?.content) {
           yield {
             type: "node_complete",
@@ -125,7 +126,7 @@ export async function* streamChatGraph(
         }
       }
 
-      finalState = { ...finalState, ...(nodeState as Partial<ChatGraphOutput>) };
+      finalState = { ...finalState, ...(nodeState as unknown as Partial<ChatGraphOutput>) };
     }
   }
 

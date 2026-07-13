@@ -67,6 +67,7 @@ export async function POST(request: NextRequest) {
           email: email.toLowerCase().trim(),
           name,
           role: "clinic_admin",
+          supabaseId: crypto.randomUUID(),
         })
         .returning();
 

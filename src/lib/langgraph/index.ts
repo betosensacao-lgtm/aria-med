@@ -30,4 +30,8 @@ export {
   queryKnowledgeBaseTool,
   savePreAnamnesisTool,
   allTools,
+  schedulingTools,
+  preAnamnesisTools,
+  createGroqChatModel,
+  executeToolCalls,
 } from "./tools";

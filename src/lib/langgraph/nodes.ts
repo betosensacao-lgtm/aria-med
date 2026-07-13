@@ -1,7 +1,7 @@
-import { AIMessage, HumanMessage } from "@langchain/core/messages";
-import { ai, CHAT_MODEL } from "@/lib/ai";
+import { SystemMessage, HumanMessage, AIMessage } from "@langchain/core/messages";
 import { getClinicContext } from "@/lib/rag/knowledge-base";
 import { hardenSystemPrompt, sanitizeInput, validateOutput } from "@/lib/security/guardrails";
+import { createGroqChatModel, executeToolCalls, schedulingTools, preAnamnesisTools } from "./tools";
 import type { ChatStateType, Intent } from "./state";
 
 const ROUTER_PROMPT = `Você é um roteador para uma clínica médica.
@@ -22,23 +22,15 @@ export async function routerNode(state: ChatStateType): Promise<Partial<ChatStat
   const lastMessage = state.messages[state.messages.length - 1];
   const rawMessage = (lastMessage?.content as string) || "";
 
-  // Sanitize input before processing
   const { clean: userMessage } = sanitizeInput(rawMessage);
 
   try {
-    const completion = await ai.chat.completions.create({
-      model: CHAT_MODEL,
-      messages: [
-        {
-          role: "user",
-          content: ROUTER_PROMPT.replace("{message}", userMessage),
-        },
-      ],
-      temperature: 0,
-      max_tokens: 20,
-    });
+    const model = createGroqChatModel({ temperature: 0, maxTokens: 20 });
+    const response = await model.invoke([
+      new HumanMessage(ROUTER_PROMPT.replace("{message}", userMessage)),
+    ]);
 
-    const raw = completion.choices[0]?.message?.content?.trim().toUpperCase() || "";
+    const raw = (response.content as string || "").trim().toUpperCase();
     const intent = raw.replace(/[^A-Z_]/g, "") as Intent;
 
     const valid: Intent[] = ["DUVIDA", "AGENDAMENTO", "CANCELAMENTO", "PRE_ANAMNESE"];
@@ -71,7 +63,6 @@ export async function doubtResolutionNode(
     .map((m) => `${m instanceof HumanMessage ? "Paciente" : "Assistente"}: ${m.content}`)
     .join("\n");
 
-  // Use hardened system prompt
   const systemPrompt = hardenSystemPrompt(
     DOUBT_SYSTEM_PROMPT
       .replace("{context}", context || "Nenhuma informacao cadastrada.")
@@ -79,28 +70,22 @@ export async function doubtResolutionNode(
   );
 
   try {
-    const completion = await ai.chat.completions.create({
-      model: CHAT_MODEL,
-      messages: [
-        { role: "system", content: systemPrompt },
-        {
-          role: "user",
-          content: (state.messages[state.messages.length - 1]?.content as string) || "",
-        },
-      ],
-      temperature: 0.3,
-      max_tokens: 1024,
-    });
+    const model = createGroqChatModel({ temperature: 0.3, maxTokens: 1024 });
+    const response = await model.invoke([
+      new SystemMessage(systemPrompt),
+      new HumanMessage((state.messages[state.messages.length - 1]?.content as string) || ""),
+    ]);
 
-    let response = completion.choices[0]?.message?.content || "Desculpe, nao consegui processar sua pergunta.";
+    let responseText = typeof response.content === "string"
+      ? response.content
+      : "Desculpe, nao consegui processar sua pergunta.";
 
-    // Validate output for security
-    const outputCheck = validateOutput(response);
+    const outputCheck = validateOutput(responseText);
     if (!outputCheck.safe) {
-      response = outputCheck.cleaned;
+      responseText = outputCheck.cleaned;
     }
 
-    return { messages: [new AIMessage(response)], completed: true };
+    return { messages: [new AIMessage(responseText)], completed: true };
   } catch (error) {
     return {
       messages: [new AIMessage("Desculpe, ocorreu um erro ao processar sua pergunta.")],
@@ -126,129 +111,34 @@ export async function schedulingNode(
   state: ChatStateType
 ): Promise<Partial<ChatStateType>> {
   const history = state.messages
-    .filter((m) => m instanceof HumanMessage || m instanceof AIMessage)
-    .map((m) => ({
-      role: m instanceof HumanMessage ? "user" as const : "assistant" as const,
-      content: m.content as string,
-    }));
+    .filter((m) => m instanceof HumanMessage || m instanceof AIMessage);
 
-  // Use hardened system prompt
   const systemPrompt = hardenSystemPrompt(SCHEDULING_SYSTEM_PROMPT);
-
-  const tools = [
-    {
-      type: "function" as const,
-      function: {
-        name: "check_calendar",
-        description: "Verifica horários disponíveis no calendário para uma data",
-        parameters: {
-          type: "object",
-          properties: {
-            calendarId: { type: "string", description: "ID do calendário do profissional" },
-            date: { type: "string", description: "Data YYYY-MM-DD" },
-          },
-          required: ["calendarId", "date"],
-        },
-      },
-    },
-    {
-      type: "function" as const,
-      function: {
-        name: "create_event",
-        description: "Cria uma consulta no calendário",
-        parameters: {
-          type: "object",
-          properties: {
-            calendarId: { type: "string", description: "ID do calendário" },
-            patientName: { type: "string", description: "Nome do paciente" },
-            patientEmail: { type: "string", description: "Email do paciente" },
-            date: { type: "string", description: "Data YYYY-MM-DD" },
-            time: { type: "string", description: "Horário HH:MM" },
-            duration: { type: "number", description: "Duração em minutos" },
-            notes: { type: "string", description: "Observações" },
-          },
-          required: ["calendarId", "patientName", "patientEmail", "date", "time"],
-        },
-      },
-    },
-    {
-      type: "function" as const,
-      function: {
-        name: "cancel_event",
-        description: "Cancela uma consulta",
-        parameters: {
-          type: "object",
-          properties: {
-            calendarId: { type: "string" },
-            eventId: { type: "string" },
-          },
-          required: ["calendarId", "eventId"],
-        },
-      },
-    },
-  ];
+  const model = createGroqChatModel().bindTools(schedulingTools);
 
   try {
-    const completion = await ai.chat.completions.create({
-      model: CHAT_MODEL,
-      messages: [
-        { role: "system", content: systemPrompt },
+    const response = await model.invoke([
+      new SystemMessage(systemPrompt),
+      ...history,
+    ]);
+
+    if (response.tool_calls?.length) {
+      const toolMessages = await executeToolCalls(response.tool_calls);
+      const followUp = await model.invoke([
+        new SystemMessage(systemPrompt),
         ...history,
-      ],
-      tools,
-      tool_choice: "auto",
-      temperature: 0.3,
-      max_tokens: 1024,
-    });
-
-    const choice = completion.choices[0];
-    const assistantMessage = choice.message;
-
-    if (assistantMessage.tool_calls?.length) {
-      const toolResults: Array<{ role: "tool"; tool_call_id: string; content: string }> = [];
-
-      for (const tc of assistantMessage.tool_calls) {
-        const { default: toolsModule } = await import("./tools");
-        const args = JSON.parse(tc.function.arguments);
-
-        let result: string;
-        switch (tc.function.name) {
-          case "check_calendar":
-            result = await toolsModule.checkCalendarTool.func(args);
-            break;
-          case "create_event":
-            result = await toolsModule.createEventTool.func(args);
-            break;
-          case "cancel_event":
-            result = await toolsModule.cancelEventTool.func(args);
-            break;
-          default:
-            result = JSON.stringify({ error: "Tool desconhecida" });
-        }
-
-        toolResults.push({ role: "tool", tool_call_id: tc.id, content: result });
-      }
-
-      const followUp = await ai.chat.completions.create({
-        model: CHAT_MODEL,
-        messages: [
-          { role: "system", content: systemPrompt },
-          ...history,
-          { role: "assistant", content: assistantMessage.content || null, tool_calls: assistantMessage.tool_calls },
-          ...toolResults,
-        ],
-        temperature: 0.3,
-        max_tokens: 1024,
-      });
+        response,
+        ...toolMessages,
+      ]);
 
       return {
-        messages: [new AIMessage(followUp.choices[0]?.message?.content || "Processado.")],
+        messages: [new AIMessage(followUp.content as string || "Processado.")],
         completed: true,
       };
     }
 
     return {
-      messages: [new AIMessage(assistantMessage.content || "Como posso ajudar com o agendamento?")],
+      messages: [new AIMessage(response.content as string || "Como posso ajudar com o agendamento?")],
     };
   } catch (error) {
     return {
@@ -278,59 +168,21 @@ export async function preAnamnesisNode(
   state: ChatStateType
 ): Promise<Partial<ChatStateType>> {
   const history = state.messages
-    .filter((m) => m instanceof HumanMessage || m instanceof AIMessage)
-    .map((m) => ({
-      role: m instanceof HumanMessage ? "user" as const : "assistant" as const,
-      content: m.content as string,
-    }));
+    .filter((m) => m instanceof HumanMessage || m instanceof AIMessage);
 
-  // Use hardened system prompt
   const systemPrompt = hardenSystemPrompt(PRE_ANAMNESE_SYSTEM_PROMPT);
+  const model = createGroqChatModel().bindTools(preAnamnesisTools);
 
-  const tools = [
-    {
-      type: "function" as const,
-      function: {
-        name: "save_pre_anamnesis",
-        description: "Salva os dados da pré-anamnese quando todos foram coletados",
-        parameters: {
-          type: "object",
-          properties: {
-            fullName: { type: "string" },
-            phone: { type: "string" },
-            chiefComplaint: { type: "string" },
-            symptomsDescription: { type: "string" },
-            symptomsDuration: { type: "string" },
-            currentMedications: { type: "array", items: { type: "string" } },
-            allergies: { type: "array", items: { type: "string" } },
-            chronicConditions: { type: "array", items: { type: "string" } },
-          },
-          required: ["fullName", "phone", "chiefComplaint"],
-        },
-      },
-    },
-  ];
   try {
-    const completion = await ai.chat.completions.create({
-      model: CHAT_MODEL,
-      messages: [
-        { role: "system", content: systemPrompt },
-        ...history,
-      ],
-      tools,
-      tool_choice: "auto",
-      temperature: 0.3,
-      max_tokens: 1024,
-    });
+    const response = await model.invoke([
+      new SystemMessage(systemPrompt),
+      ...history,
+    ]);
 
-    const choice = completion.choices[0];
-    const assistantMessage = choice.message;
+    if (response.tool_calls?.length) {
+      const toolMessages = await executeToolCalls(response.tool_calls);
 
-    if (assistantMessage.tool_calls?.length) {
-      const { default: toolsModule } = await import("./tools");
-      const args = JSON.parse(assistantMessage.tool_calls[0].function.arguments);
-
-      const result = await toolsModule.savePreAnamnesisTool.func(args);
+      const preAnamnesisArgs = response.tool_calls[0].args;
 
       return {
         messages: [
@@ -338,13 +190,13 @@ export async function preAnamnesisNode(
             "Pre-anamnese concluida! Seus dados foram registrados com sucesso. Obrigado!"
           ),
         ],
-        patientData: { ...args, collectionComplete: true },
+        patientData: { ...preAnamnesisArgs, collectionComplete: true } as any,
         completed: true,
       };
     }
 
     return {
-      messages: [new AIMessage(assistantMessage.content || "Vamos iniciar sua pre-anamnese.")],
+      messages: [new AIMessage(response.content as string || "Vamos iniciar sua pre-anamnese.")],
     };
   } catch (error) {
     return {

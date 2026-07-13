@@ -1,4 +1,6 @@
 import { DynamicStructuredTool } from "@langchain/core/tools";
+import { ToolMessage } from "@langchain/core/messages";
+import { ChatOpenAI } from "@langchain/openai";
 import { z } from "zod";
 import { listAvailableSlots, createCalendarEvent, cancelCalendarEvent } from "@/lib/calendar/google";
 import { getClinicContext } from "@/lib/rag/knowledge-base";
@@ -169,3 +171,61 @@ export const allTools = [
   queryKnowledgeBaseTool,
   savePreAnamnesisTool,
 ];
+
+export const schedulingTools = [
+  checkCalendarTool,
+  createEventTool,
+  cancelEventTool,
+];
+
+export const preAnamnesisTools = [
+  savePreAnamnesisTool,
+];
+
+export function createGroqChatModel(params?: {
+  temperature?: number;
+  maxTokens?: number;
+}) {
+  const apiKey = process.env.GROQ_API_KEY?.trim();
+  return new ChatOpenAI({
+    model: process.env.GROQ_MODEL?.trim() || "meta-llama/llama-4-scout-17b-16e-instruct",
+    temperature: params?.temperature ?? 0.3,
+    maxTokens: params?.maxTokens ?? 1024,
+    apiKey: apiKey ?? "missing-key",
+    configuration: {
+      baseURL: "https://api.groq.com/openai/v1",
+    },
+  });
+}
+
+export async function executeToolCalls(
+  toolCalls: Array<{ name: string; args: Record<string, unknown>; id?: string }>
+): Promise<ToolMessage[]> {
+  const results: ToolMessage[] = [];
+
+  for (const tc of toolCalls) {
+    const tool = allTools.find((t) => t.name === tc.name);
+    if (tool) {
+      try {
+        const result = await tool.func(tc.args as any);
+        results.push(
+          new ToolMessage({
+            content: typeof result === "string" ? result : JSON.stringify(result),
+            tool_call_id: tc.id ?? crypto.randomUUID(),
+            name: tc.name,
+          })
+        );
+      } catch (error) {
+        results.push(
+          new ToolMessage({
+            content: JSON.stringify({ error: String(error) }),
+            tool_call_id: tc.id ?? crypto.randomUUID(),
+            name: tc.name,
+          })
+        );
+      }
+    }
+  }
+
+  return results;
+}
