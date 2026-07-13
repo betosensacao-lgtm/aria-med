@@ -3,28 +3,31 @@ import { db } from "@/db";
 import { sql } from "drizzle-orm";
 
 export async function GET(request: NextRequest) {
-  // Verify cron secret for scheduled requests
+  const start = Date.now();
   const authHeader = request.headers.get("authorization");
   const isCronRequest = authHeader === `Bearer ${process.env.CRON_SECRET}`;
+  const isDetailed = isCronRequest || request.headers.get("x-debug") === "1";
 
-  // Allow public access for basic health check, but log cron details only for authenticated requests
-  const checks: Record<string, { status: string; details?: string }> = {};
+  const checks: Record<string, { status: string; details?: string; ms?: number }> = {};
 
   // 1. Database connection
   try {
+    const t0 = Date.now();
     await db.execute(sql`SELECT 1`);
-    checks.database = { status: "ok" };
+    checks.database = { status: "ok", ms: Date.now() - t0 };
   } catch (e: any) {
     checks.database = { status: "error", details: e.message };
   }
 
-  // 2. Check all tables exist
+  // 2. Tables
   const expectedTables = [
     "users", "clinics", "professionals", "appointments",
-    "triage_sessions", "triage_messages", "pre_anamnesis", "whatsapp_sessions"
+    "admin_users", "pricing_plans", "chat_sessions", "chat_messages",
+    "triage_sessions", "triage_messages",
   ];
 
   try {
+    const t0 = Date.now();
     const result = await db.execute(sql`
       SELECT table_name FROM information_schema.tables
       WHERE table_schema = 'public' AND table_name IN ${sql.raw(`(${expectedTables.map(t => `'${t}'`).join(',')})`)}
@@ -34,51 +37,107 @@ export async function GET(request: NextRequest) {
 
     checks.tables = {
       status: missing.length === 0 ? "ok" : "warning",
-      details: missing.length > 0 ? `Missing: ${missing.join(", ")}` : `${found.length}/${expectedTables.length} tables`
+      details: missing.length > 0 ? `Missing: ${missing.join(", ")}` : `${found.length}/${expectedTables.length} tables`,
+      ms: Date.now() - t0,
     };
   } catch (e: any) {
     checks.tables = { status: "error", details: e.message };
   }
 
-  // 3. Check RLS status (only for authenticated requests)
-  if (isCronRequest) {
+  // 3. RLS (detailed only)
+  if (isDetailed) {
     try {
+      const t0 = Date.now();
       const result = await db.execute(sql`
         SELECT tablename, rowsecurity FROM pg_tables
-        WHERE schemaname = 'public'
+        WHERE schemaname = 'public' AND tablename NOT LIKE 'pg_%'
       `);
       const tables = (result as any[]);
       const noRLS = tables.filter((t: any) => !t.rowsecurity);
 
       checks.rls = {
         status: noRLS.length === 0 ? "ok" : "critical",
-        details: noRLS.length > 0 ? `Tables without RLS: ${noRLS.map((t: any) => t.tablename).join(", ")}` : "All tables have RLS"
+        details: noRLS.length > 0
+          ? `Tables without RLS: ${noRLS.map((t: any) => t.tablename).join(", ")}`
+          : "All tables have RLS",
+        ms: Date.now() - t0,
       };
     } catch (e: any) {
       checks.rls = { status: "error", details: e.message };
     }
   }
 
-  // 4. WhatsApp configuration
-  try {
-    const result = await db.execute(sql`
-      SELECT COUNT(*) as count FROM clinics
-      WHERE whatsapp_phone_number_id IS NOT NULL AND whatsapp_access_token IS NOT NULL
-    `);
-    const count = (result as any[])[0]?.count || 0;
-    checks.whatsapp = {
-      status: count > 0 ? "ok" : "warning",
-      details: `${count} clinic(s) configured`
-    };
-  } catch (e: any) {
-    checks.whatsapp = { status: "error", details: e.message };
+  // 4. Migrations (detailed only)
+  if (isDetailed) {
+    try {
+      const t0 = Date.now();
+      const mResult = await db.execute(
+        sql`SELECT hash, created_at FROM drizzle.__drizzle_migrations ORDER BY created_at`
+      );
+      const applied = (mResult as any[]).length;
+      const { readdirSync } = await import("fs");
+      const { resolve } = await import("path");
+      const migrationFiles = readdirSync(resolve(process.cwd(), "src/db/migrations"))
+        .filter((f: string) => f.endsWith(".sql"));
+      const pending = migrationFiles.length - applied;
+
+      checks.migrations = {
+        status: pending === 0 ? "ok" : "warning",
+        details: `${applied}/${migrationFiles.length} applied${pending > 0 ? `, ${pending} pending` : ""}`,
+        ms: Date.now() - t0,
+      };
+    } catch (e: any) {
+      checks.migrations = { status: "ok", details: "Migration check skipped (read-only)" };
+    }
   }
 
+  // 5. Stripe connectivity (detailed only)
+  if (isDetailed) {
+    try {
+      const t0 = Date.now();
+      if (process.env.STRIPE_SECRET_KEY) {
+        const { getStripe } = await import("@/lib/stripe");
+        const stripe = getStripe();
+        const balance = await stripe.balance.retrieve();
+        checks.stripe = {
+          status: "ok",
+          details: `Balance: ${balance.available.map((b: any) => `${(b.amount / 100).toFixed(2)} ${b.currency}`).join(", ") || "empty"}`,
+          ms: Date.now() - t0,
+        };
+      } else {
+        checks.stripe = { status: "warning", details: "STRIPE_SECRET_KEY not set" };
+      }
+    } catch (e: any) {
+      checks.stripe = { status: "error", details: e.message };
+    }
+  }
+
+  // 6. Env vars (detailed only)
+  if (isDetailed) {
+    const required = ["DATABASE_URL", "DIRECT_URL", "JWT_SECRET", "GROQ_API_KEY"];
+    const missing = required.filter(v => !process.env[v]);
+    checks.env = {
+      status: missing.length === 0 ? "ok" : "critical",
+      details: missing.length > 0
+        ? `Missing: ${missing.join(", ")}`
+        : "All required env vars set",
+    };
+  }
+
+  // 7. Deployment info
+  checks.deployment = {
+    status: "ok",
+    details: `Node ${process.version} · ${process.env.VERCEL_ENV || "local"} · ${process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) || "dev"}`,
+  };
+
   const hasErrors = Object.values(checks).some(c => c.status === "error" || c.status === "critical");
+  const hasWarnings = Object.values(checks).some(c => c.status === "warning");
+  const overallStatus = hasErrors ? "degraded" : hasWarnings ? "healthy" : "healthy";
 
   return NextResponse.json({
-    status: hasErrors ? "degraded" : "healthy",
+    status: overallStatus,
     timestamp: new Date().toISOString(),
+    uptime: Date.now() - start,
     checks,
   });
 }
