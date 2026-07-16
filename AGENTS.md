@@ -15,6 +15,8 @@
 | `pnpm seed-demo` | Cria 20 sessoes de chat demo para testes |
 | `pnpm seed-admin` | Cria/atualiza admin user no banco |
 | `pnpm seed-stripe-products` | Cria produtos e precos no Stripe + atualiza DB |
+| `pnpm health` | Verifica saude do sistema (DB, env vars, deploy, Stripe) |
+| `pnpm health:fix` | Verifica + auto-corrige problemas encontrados |
 
 ## Framework & toolchain
 
@@ -55,7 +57,8 @@
 - **README.md** descreve arquitetura SaaS antiga (Stripe, Resend, i18n, cron reminders). Projeto real e chatbot web-first com Google Calendar.
 - **Schema** (`src/db/schema.ts`) ainda tem colunas legadas: `stripeCustomerId`, `subscriptionId`, `supabaseId`. Nao sao usadas mas estao no banco.
 - **`src/lib/langgraph/persistence.ts`** exporta SqliteSaver mas `graph.ts` usa `MemorySaver` direto. O persistence nao esta conectado.
-- **`.github/workflows/`** vazio — sem CI/CD configurado. Deploy manual no Vercel via git push.
+- **`.github/workflows/ci.yml`** — CI/CD com GitHub Actions: roda lint + testes em todo push para main. Health check automático após deploy.
+- **Sentry** — tracking de erros (client + server). Ativo apenas se `SENTRY_DSN` estiver configurada. Config em `sentry.client.config.ts`, `sentry.server.config.ts`.
 - **Variaveis de ambiente** em `.env.local` (gitignorado). `GOOGLE_CALENDAR_PRIVATE_KEY` precisa de `replace(/\\n/g, "\n")` (ja tratado em `google.ts:23`).
 - **Testes** sao Jest puro, apenas unitarios. Testes atuais em `src/lib/*.test.ts` cobrem utils e edge routing do grafo.
 
@@ -70,6 +73,15 @@ GOOGLE_CALENDAR_PRIVATE_KEY=   # Chave privada (com \n literais)
 GOOGLE_CALENDAR_ID=         # ID do calendario Google
 CLINIC_ID=                  # ID da clinica no banco
 NEXT_PUBLIC_APP_URL=        # URL do deploy (ex: https://medbook.vercel.app)
+
+# Stripe (checkout e billing)
+STRIPE_SECRET_KEY=
+STRIPE_WEBHOOK_SECRET=
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=
+
+# Sentry (tracking de erros — opcional)
+SENTRY_DSN=
+NEXT_PUBLIC_SENTRY_DSN=
 
 # Meta/WhatsApp (deferido — nao obrigatorio para o chat web)
 META_APP_SECRET=

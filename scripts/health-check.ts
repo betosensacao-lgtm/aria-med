@@ -34,8 +34,6 @@ async function main() {
     "DATABASE_URL",
     "DIRECT_URL",
     "GROQ_API_KEY",
-    "JWT_SECRET",
-    "NEXT_PUBLIC_APP_URL",
   ];
   const stripeEnvVars = [
     "STRIPE_SECRET_KEY",
@@ -48,9 +46,15 @@ async function main() {
     "GOOGLE_CALENDAR_ID",
   ];
 
+  const sentryEnvVars = [
+    "SENTRY_DSN",
+    "NEXT_PUBLIC_SENTRY_DSN",
+  ];
+
   const missingRequired = requiredEnvVars.filter((v) => !process.env[v]);
   const missingStripe = stripeEnvVars.filter((v) => !process.env[v]);
   const missingGoogle = googleEnvVars.filter((v) => !process.env[v]);
+  const missingSentry = sentryEnvVars.filter((v) => !process.env[v]);
 
   if (missingRequired.length === 0) {
     ok("Env vars (required)", "All required vars are set");
@@ -68,6 +72,12 @@ async function main() {
     ok("Env vars (Google)", "All Google vars are set");
   } else {
     warn(`Env vars (Google): ${missingGoogle.join(", ")}`, `Missing: ${missingGoogle.join(", ")}`);
+  }
+
+  if (missingSentry.length === 0) {
+    ok("Env vars (Sentry)", "All Sentry vars are set");
+  } else {
+    warn(`Env vars (Sentry): ${missingSentry.join(", ")}`, `Missing: ${missingSentry.join(", ")}`);
   }
 
   // ── 2. Database connection ───────────────────────────────────────────────
